@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>다영이 상태 알림</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#6366F1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="다영이 상태">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <style>
+        :root {
+            --primary: #6366F1;
+            --primary-light: #A5B4FC;
+            --primary-dark: #4F46E5;
+            --secondary: #EC4899;
+            --secondary-light: #F9A8D4;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --bg: linear-gradient(135deg, #F0F4FF 0%, #FCF0FF 50%, #FFF0F5 100%);
+            --card: rgba(255, 255, 255, 0.85);
+            --text: #1E293B;
+            --text-muted: #64748B;
+            --border: rgba(99, 102, 241, 0.15);
+            --shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
+            --shadow-sm: 0 4px 12px rgba(99, 102, 241, 0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif; background: var(--bg); background-attachment: fixed; min-height: 100vh; color: var(--text); line-height: 1.6; }
+        .app { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        .header { text-align: center; padding: 20px 16px; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; border-radius: 0 0 32px 32px; box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3); }
+        .header h1 { font-size: 1.3rem; font-weight: 700; }
+        
+        .tab-nav { display: flex; background: var(--card); backdrop-filter: blur(20px); margin: -16px 16px 0; border-radius: 20px; padding: 6px; box-shadow: var(--shadow); position: relative; z-index: 100; }
+        .tab-btn { flex: 1; padding: 12px 8px; border: none; background: transparent; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: 16px; transition: all 0.3s ease; }
+        .tab-btn.active { color: white; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+        
+        .tab-content { flex: 1; display: none; padding: 20px 16px; overflow-y: auto; }
+        .tab-content.active { display: block; }
+        
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .status-card { background: var(--card); backdrop-filter: blur(20px); border-radius: 24px; padding: 18px 14px; text-align: center; box-shadow: var(--shadow-sm); border: 2px solid transparent; transition: all 0.3s ease; }
+        .status-card:active { transform: scale(0.98); }
+        .status-card.location-going_home { border-color: #A5F3FC; background: linear-gradient(180deg, rgba(236,254,255,0.9), rgba(255,255,255,0.9)); }
+        .status-card.location-at_home { border-color: #BBF7D0; background: linear-gradient(180deg, rgba(240,253,244,0.9), rgba(255,255,255,0.9)); }
+        .status-card.location-outside { border-color: #FDE68A; background: linear-gradient(180deg, rgba(255,251,235,0.9), rgba(255,255,255,0.9)); }
+        .status-card.location-busy { border-color: #FECACA; background: linear-gradient(180deg, rgba(254,242,242,0.9), rgba(255,255,255,0.9)); }
+        .status-card.hunger-hungry { border-color: #FBCFE8; background: linear-gradient(180deg, rgba(253,242,248,0.9), rgba(255,255,255,0.9)); }
+        .status-card.hunger-not_hungry { border-color: #C7D2FE; background: linear-gradient(180deg, rgba(238,242,255,0.9), rgba(255,255,255,0.9)); }
+        .status-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+        .status-emoji { font-size: 2.2rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+        .status-text { font-size: 0.85rem; font-weight: 700; margin-top: 6px; }
+        .status-time { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
+        
+        .section { background: var(--card); backdrop-filter: blur(20px); border-radius: 24px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+        .section-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .guide-list { list-style: none; display: grid; gap: 10px; }
+        .guide-item { display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.8); border-radius: 16px; padding: 12px 14px; border: 1px solid var(--border); font-size: 0.85rem; }
+        .guide-item span { font-size: 1.1rem; }
+        .help-list { list-style: none; display: grid; gap: 10px; font-size: 0.85rem; color: var(--text); }
+        .help-list li { background: rgba(255, 255, 255, 0.8); border-radius: 16px; padding: 12px 14px; border: 1px solid var(--border); }
+        .help-actions { display: grid; gap: 10px; margin-top: 12px; }
+        .update-notice { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 16px; padding: 12px 14px; font-size: 0.85rem; font-weight: 600; color: #92400E; display: none; }
+        .update-notice.show { display: block; }
+        
+        .input-group { margin-bottom: 12px; }
+        .input-label { font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-muted); }
+        .input-field { width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 16px; font-size: 0.9rem; font-family: inherit; resize: none; min-height: 56px; background: rgba(255,255,255,0.8); transition: all 0.3s ease; }
+        .input-field:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+        .draft-time { font-size: 0.7rem; color: var(--text-muted); text-align: right; margin-top: 6px; font-weight: 600; }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 16px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s ease; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+        .btn-pink { background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%); color: white; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); }
+        .btn-outline { background: white; border: 2px solid var(--border); color: var(--text); }
+        .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
+        
+        .calendar { background: var(--card); backdrop-filter: blur(20px); border-radius: 24px; padding: 18px; box-shadow: var(--shadow-sm); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .calendar-title { font-size: 1.1rem; font-weight: 700; }
+        .calendar-nav { background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%); border: none; width: 36px; height: 36px; border-radius: 12px; cursor: pointer; font-size: 0.9rem; color: white; box-shadow: var(--shadow-sm); }
+        .calendar-nav:active { transform: scale(0.95); }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 8px; }
+        .calendar-weekday { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); padding: 8px 0; }
+        .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 0.85rem; cursor: pointer; position: relative; font-weight: 500; }
+        .calendar-day:hover { background: rgba(99, 102, 241, 0.1); }
+        .calendar-day.other-month { opacity: 0.3; }
+        .calendar-day.today { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); font-weight: 700; color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+        .calendar-day.selected { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+        .calendar-day.has-data::after { content: ''; position: absolute; bottom: 4px; width: 6px; height: 6px; background: var(--secondary); border-radius: 50%; }
+        
+        .day-detail { margin-top: 16px; background: var(--card); backdrop-filter: blur(20px); border-radius: 24px; padding: 18px; box-shadow: var(--shadow-sm); }
+        .day-detail-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+        
+        /* 메시지 카드 (묶음) */
+        .message-card { background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .message-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+        .message-card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        .message-card-status { display: flex; align-items: center; gap: 6px; }
+        .message-card-read { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+        .message-card-read.read { background: #D1FAE5; color: #047857; }
+        .message-card-read.unread { background: #FEE2E2; color: #B91C1C; }
+        .message-card-delete { width: 28px; height: 28px; border: none; background: rgba(239, 68, 68, 0.1); border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: var(--danger); }
+        .message-card-delete:hover { background: var(--danger); color: white; }
+        .message-card-item { display: flex; gap: 10px; margin-bottom: 10px; }
+        .message-card-item:last-child { margin-bottom: 0; }
+        .message-card-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+        .message-card-icon.message { background: #DBEAFE; }
+        .message-card-icon.advice { background: #FCE7F3; }
+        .message-card-icon.memo { background: #D1FAE5; }
+        .message-card-content { flex: 1; font-size: 0.85rem; line-height: 1.5; }
+        .message-card-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; }
+        
+        /* 다영이 메시지 (단일) */
+        .dayoung-message { background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%); border-radius: 16px; padding: 14px; margin-bottom: 10px; border-left: 4px solid var(--secondary); }
+        .dayoung-message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .dayoung-message-time { font-size: 0.7rem; color: var(--text-muted); }
+        .dayoung-message-content { font-size: 0.85rem; }
+        
+        .status-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .status-option { padding: 14px 10px; border: 2px solid var(--border); border-radius: 16px; background: white; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+        .status-option:active { transform: scale(0.97); }
+        .status-option.selected { border-color: var(--primary); background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
+        .status-option .emoji { font-size: 1.6rem; display: block; }
+        .status-option .text { font-size: 0.8rem; margin-top: 4px; font-weight: 600; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; padding: 28px 24px; border-radius: 28px; width: 100%; max-width: 300px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+        .modal h3 { font-size: 1.1rem; margin-bottom: 20px; }
+        .modal-input { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: 16px; font-size: 1.5rem; text-align: center; letter-spacing: 12px; margin-bottom: 20px; font-weight: 700; }
+        .modal-input:focus { outline: none; border-color: var(--primary); }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons .btn { flex: 1; padding: 12px; }
+        
+        .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(100px); background: linear-gradient(135deg, var(--text) 0%, #0F172A 100%); color: white; padding: 14px 28px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; z-index: 1000; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .install-btn { position: absolute; top: 12px; right: 12px; background: white; color: var(--primary); border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        
+        .push-banner { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); border-radius: 16px; padding: 14px 18px; margin-bottom: 16px; color: white; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .push-banner.hidden { display: none; }
+        .push-banner-text { font-size: 0.85rem; font-weight: 600; }
+        .push-banner-btn { background: white; color: var(--success); border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+        
+        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; }
+        .loading-spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.85rem; }
+        .empty-state-emoji { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; }
+        
+        .photo-preview { max-width: 100%; border-radius: 16px; margin: 12px 0; box-shadow: var(--shadow-sm); }
+        
+        .unread-badge { background: var(--danger); color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 700; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header class="header">
+        <button id="installBtn" class="install-btn" style="display:none" onclick="installApp()">📲 앱 설치</button>
+        <h1>💕 다영이 상태</h1>
+    </header>
+    
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="home">🏠 홈</button>
+        <button class="tab-btn" data-tab="calendar">📅 달력</button>
+        <button class="tab-btn" data-tab="dayoung">👧 다영</button>
+    </nav>
+    
+    <div id="loading" class="loading tab-content active">
+        <div class="loading-spinner"></div>
+        <p style="margin-top:16px;color:var(--text-muted);font-size:0.9rem">불러오는 중...</p>
+    </div>
+    
+    <!-- 홈 탭 -->
+    <div id="tab-home" class="tab-content">
+        <div id="pushBanner" class="push-banner hidden">
+            <span class="push-banner-text">🔔 알림 받기</span>
+            <button class="push-banner-btn" onclick="subscribePush()">허용</button>
+        </div>
+        
+        <div class="status-grid">
+            <div id="locationCard" class="status-card location-going_home">
+                <div class="status-label">📍 다영이 위치</div>
+                <div id="locationEmoji" class="status-emoji">🚶</div>
+                <div id="locationText" class="status-text">집에 가는 중</div>
+                <div id="locationTime" class="status-time"></div>
+            </div>
+            <div id="hungerCard" class="status-card hunger-not_hungry">
+                <div class="status-label">🍚 배고픔</div>
+                <div id="hungerEmoji" class="status-emoji">😊</div>
+                <div id="hungerText" class="status-text">안 고파요</div>
+                <div id="hungerTime" class="status-time"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">💬 오늘의 메시지 <span id="unreadBadge" class="unread-badge" style="display:none"></span></div>
+            <div id="todayMessages">
+                <div class="empty-state">
+                    <div class="empty-state-emoji">💭</div>
+                    <p>오늘의 메시지가 없어요</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">👨 아버지 메모 작성</div>
+            <div class="input-group">
+                <label class="input-label">💬 하고싶은 말</label>
+                <textarea id="fatherMessage" class="input-field" placeholder="다영이에게 하고싶은 말..."></textarea>
+                <div id="fatherMessageDraftTime" class="draft-time"></div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">❤️ 당부</label>
+                <textarea id="fatherAdvice" class="input-field" placeholder="당부할 말..."></textarea>
+                <div id="fatherAdviceDraftTime" class="draft-time"></div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">📝 메모</label>
+                <textarea id="fatherMemo" class="input-field" placeholder="기타 메모..."></textarea>
+                <div id="fatherMemoDraftTime" class="draft-time"></div>
+            </div>
+            <button class="btn btn-primary" onclick="saveFatherMemo()">💾 저장하기</button>
+        </div>
+
+        <div class="section" style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);">
+            <div class="section-title">📋 업데이트 내역</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
+                    <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px;">v1.1.3 <span style="font-weight: 400; font-size: 0.7rem;">2026.02.02</span></div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li>🎨 홈 화면 레이아웃 개선</li>
+                        <li>🐛 메시지 저장 시간 정확도 개선</li>
+                    </ul>
+                </div>
+                <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
+                    <div style="font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">v1.1.2 <span style="font-weight: 400; font-size: 0.7rem;">2026.02.02</span></div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li>🕐 메시지 입력 중 '저장 예정 시각' 미리보기 표시</li>
+                    </ul>
+                </div>
+                <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
+                    <div style="font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">v1.1.1 <span style="font-weight: 400; font-size: 0.7rem;">2026.02.02</span></div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li>🐛 시간이 3시간 늦게 표시되던 문제 수정</li>
+                    </ul>
+                </div>
+                <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
+                    <div style="font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">v1.1.0 <span style="font-weight: 400; font-size: 0.7rem;">2026.02.02</span></div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li>🐛 업데이트 시간이 잘못 표시되던 문제 수정</li>
+                        <li>🕐 한국 시간대(KST) 명시적 적용</li>
+                    </ul>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">v1.0.0 <span style="font-weight: 400; font-size: 0.7rem;">최초 릴리즈</span></div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li>🏠 다영이 위치/배고픔 상태 확인</li>
+                        <li>💬 아버지-다영 메시지 기능</li>
+                        <li>📅 달력 기록 기능</li>
+                        <li>🔔 푸시 알림 기능</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 앱 설정/도구 (간소화) -->
+        <div id="updateNotice" class="update-notice" style="margin-bottom:12px">새 버전이 있어요!</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; opacity:0.8; font-size:0.8rem;">
+            <button class="btn btn-outline" onclick="refreshAppCache()" style="flex:1; padding:10px; font-size:0.8rem; min-width:140px;">🔄 캐시 정리</button>
+            <button class="btn btn-outline" onclick="applyUpdate()" style="flex:1; padding:10px; font-size:0.8rem; min-width:140px;">✅ 새 버전 적용</button>
+        </div>
+        <p style="font-size:0.7rem; color:var(--text-muted); text-align:center; margin-top:10px; margin-bottom:8px;">
+            화면이 안 바뀌면 '캐시 정리' 버튼을 눌러보세요
+        </p>
+    </div>
+
+    <!-- 달력 탭 -->
+    <div id="tab-calendar" class="tab-content">
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="calendar-nav" onclick="changeMonth(-1)">◀</button>
+                <div class="calendar-title" id="calendarTitle"></div>
+                <button class="calendar-nav" onclick="changeMonth(1)">▶</button>
+            </div>
+            <div class="calendar-weekdays">
+                <div class="calendar-weekday">일</div>
+                <div class="calendar-weekday">월</div>
+                <div class="calendar-weekday">화</div>
+                <div class="calendar-weekday">수</div>
+                <div class="calendar-weekday">목</div>
+                <div class="calendar-weekday">금</div>
+                <div class="calendar-weekday">토</div>
+            </div>
+            <div class="calendar-days" id="calendarDays"></div>
+        </div>
+        <div id="dayDetail" class="day-detail" style="display:none">
+            <div class="day-detail-title" id="dayDetailTitle"></div>
+            <div id="dayEntries"></div>
+            <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border)">
+                <textarea id="calendarMemo" class="input-field" placeholder="이 날의 메모 추가..."></textarea>
+                <div id="calendarDraftTime" class="draft-time"></div>
+                <input type="file" id="photoUpload" accept="image/*" onchange="previewPhoto(event)" style="display:none">
+                <img id="photoPreview" class="photo-preview" style="display:none">
+                <div style="display:flex;gap:10px;margin-top:12px">
+                    <button class="btn btn-outline" onclick="document.getElementById('photoUpload').click()" style="flex:1">📷 사진</button>
+                    <button class="btn btn-primary" onclick="saveCalendarEntry()" style="flex:2">💾 저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 다영 탭 -->
+    <div id="tab-dayoung" class="tab-content">
+        <div id="dayoungLocked" style="text-align:center;padding:60px 20px">
+            <div style="font-size:4rem;margin-bottom:16px">🔐</div>
+            <p style="color:var(--text-muted);margin-bottom:20px;font-size:0.9rem">다영이 전용 화면이에요</p>
+            <button class="btn btn-pink" onclick="showPasswordModal()" style="max-width:200px;margin:0 auto">비밀번호 입력</button>
+        </div>
+        <div id="dayoungUnlocked" style="display:none">
+            <!-- 알림 등록 배너 -->
+            <div id="dayoungPushBanner" class="push-banner hidden" style="background:linear-gradient(135deg,#EC4899,#DB2777)">
+                <span class="push-banner-text">🔔 아버지 메시지 알림 받기</span>
+                <button class="push-banner-btn" style="color:#DB2777" onclick="subscribePushDayoung()">허용</button>
+            </div>
+            <!-- 안읽은 메시지 표시 -->
+            <div id="unreadSection" class="section" style="display:none;border:2px solid var(--danger)">
+                <div class="section-title" style="color:var(--danger)">📬 안읽은 아버지 메시지</div>
+                <div id="unreadMessages"></div>
+                <button class="btn btn-success" onclick="markAllRead()" style="margin-top:12px">✓ 모두 읽음 표시</button>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">👧 내 상태 변경</div>
+                <div class="input-label">📍 지금 어디에 있어요?</div>
+                <div class="status-selector" id="locationSelector">
+                    <div class="status-option" data-value="going_home"><span class="emoji">🚶</span><span class="text">집에 가는 중</span></div>
+                    <div class="status-option" data-value="at_home"><span class="emoji">🏠</span><span class="text">집 도착!</span></div>
+                    <div class="status-option" data-value="outside"><span class="emoji">🌙</span><span class="text">밖에 있어요</span></div>
+                    <div class="status-option" data-value="busy"><span class="emoji">💼</span><span class="text">바빠요</span></div>
+                </div>
+                <div class="input-label">🍚 배고파요?</div>
+                <div class="status-selector" id="hungerSelector">
+                    <div class="status-option" data-value="not_hungry"><span class="emoji">😊</span><span class="text">안 고파요</span></div>
+                    <div class="status-option" data-value="hungry"><span class="emoji">🍽️</span><span class="text">배고파요!</span></div>
+                </div>
+                <div class="input-group" style="margin-top:14px">
+                    <label class="input-label">💬 아버지에게 메시지</label>
+                    <textarea id="dayoungMessage" class="input-field" placeholder="아버지에게 하고 싶은 말..."></textarea>
+                    <div id="dayoungMessageDraftTime" class="draft-time"></div>
+                </div>
+                <button class="btn btn-pink" onclick="saveDayoungStatus()">💕 저장하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="passwordModal" class="modal-overlay">
+    <div class="modal">
+        <h3>🔐 비밀번호 입력</h3>
+        <input type="password" id="passwordInput" class="modal-input" maxlength="4" placeholder="••••" inputmode="numeric">
+        <div class="modal-buttons">
+            <button class="btn btn-outline" onclick="closePasswordModal()">취소</button>
+            <button class="btn btn-pink" onclick="checkPassword()">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API_URL='https://dayoung-api-v2-937334177552.asia-northeast3.run.app';
+const VAPID_KEY='BMcQVh8osasMQwurhtnGOGEM9f2saQUA7t0JchYvqY03a3lITmeDVhlBd8YJhqT4hDsWiQtCqHfrGsQhGGMShGM';
+const DAYOUNG_PW='2428';
+
+let currentData={}, selectedDate=null, currentMonth=new Date();
+let selectedLocation=null, selectedHunger=null, photoData=null;
+
+const locMap = {going_home:{e:'🚶',t:'집에 가는 중'},at_home:{e:'🏠',t:'집 도착!'},outside:{e:'🌙',t:'밖에 있어요'},busy:{e:'💼',t:'바빠요'}};
+const hunMap = {not_hungry:{e:'😊',t:'안 고파요'},hungry:{e:'🍽️',t:'배고파요'}};
+
+// KST 타임스탬프 생성 (서버 시간대 문제 우회)
+function getKSTTimestamp() {
+    const now = new Date();
+    const year = now.toLocaleString('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric' });
+    const month = now.toLocaleString('en-CA', { timeZone: 'Asia/Seoul', month: '2-digit' });
+    const day = now.toLocaleString('en-CA', { timeZone: 'Asia/Seoul', day: '2-digit' });
+    const hour = now.toLocaleString('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', hour12: false });
+    const minute = now.toLocaleString('en-GB', { timeZone: 'Asia/Seoul', minute: '2-digit' });
+    const second = now.toLocaleString('en-GB', { timeZone: 'Asia/Seoul', second: '2-digit' });
+    return `${year}-${month}-${day}T${hour}:${minute.padStart(2,'0')}:${second.padStart(2,'0')}`;
+}
+
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'block';
+});
+
+async function installApp() {
+    if (!deferredPrompt) {
+        showToast('브라우저 메뉴에서 "홈 화면에 추가"를 선택하세요');
+        return;
+    }
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+        showToast('📲 앱 설치 완료!');
+    }
+    deferredPrompt = null;
+    document.getElementById('installBtn').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
+    fetchData();
+    initSelectors();
+    initDraftTimePreviews();
+    registerSW();
+    checkPush();
+    renderCalendar();
+});
+
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        };
+    });
+}
+
+function initSelectors() {
+    document.querySelectorAll('#locationSelector .status-option').forEach(opt => {
+        opt.onclick = () => {
+            document.querySelectorAll('#locationSelector .status-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedLocation = opt.dataset.value;
+        };
+    });
+    document.querySelectorAll('#hungerSelector .status-option').forEach(opt => {
+        opt.onclick = () => {
+            document.querySelectorAll('#hungerSelector .status-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedHunger = opt.dataset.value;
+        };
+    });
+
+}
+
+const _draftIntervals = new Map();
+
+function _setDraft(previewEl, label) {
+    previewEl.textContent = `🕐 ${label}: ${formatTimeHHMM(Date.now())} (KST)`;
+}
+
+function attachDraftTimePreview(textareaId, previewId, label = '저장 예정 시각') {
+    const ta = document.getElementById(textareaId);
+    const pv = document.getElementById(previewId);
+    if(!ta || !pv) return;
+
+    const start = () => {
+        _setDraft(pv, label);
+        if(_draftIntervals.has(previewId)) return;
+        _draftIntervals.set(previewId, setInterval(() => _setDraft(pv, label), 1000));
+    };
+
+    const stop = () => {
+        const id = _draftIntervals.get(previewId);
+        if(id) { clearInterval(id); _draftIntervals.delete(previewId); }
+        if(ta.value.trim()) _setDraft(pv, label);
+        else pv.textContent = '';
+    };
+
+    ta.addEventListener('focus', start);
+    ta.addEventListener('input', start);
+    ta.addEventListener('blur', stop);
+}
+
+function clearDraftTime(previewId) {
+    const pv = document.getElementById(previewId);
+    if(pv) pv.textContent = '';
+    const id = _draftIntervals.get(previewId);
+    if(id) { clearInterval(id); _draftIntervals.delete(previewId); }
+}
+
+function initDraftTimePreviews() {
+    attachDraftTimePreview('fatherMessage', 'fatherMessageDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('fatherAdvice', 'fatherAdviceDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('fatherMemo', 'fatherMemoDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('calendarMemo', 'calendarDraftTime', '저장 예정 시각');
+    attachDraftTimePreview('dayoungMessage', 'dayoungMessageDraftTime', '저장 예정 시각');
+}
+
+
+async function fetchData() {
+    try {
+        const res = await fetch(API_URL);
+        currentData = await res.json();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('tab-home').classList.add('active');
+        updateDisplay();
+    } catch(e) {
+        document.getElementById('loading').innerHTML = '<div class="empty-state"><div class="empty-state-emoji">😢</div><p>연결할 수 없어요</p></div>';
+    }
+}
+
+function updateDisplay() {
+    const loc = locMap[currentData.location] || locMap.going_home;
+    document.getElementById('locationEmoji').textContent = loc.e;
+    document.getElementById('locationText').textContent = loc.t;
+    document.getElementById('locationCard').className = 'status-card location-' + (currentData.location || 'going_home');
+    if(currentData.locationUpdated) document.getElementById('locationTime').textContent = formatTime(currentData.locationUpdated);
+    
+    const hun = hunMap[currentData.hunger] || hunMap.not_hungry;
+    document.getElementById('hungerEmoji').textContent = hun.e;
+    document.getElementById('hungerText').textContent = hun.t;
+    document.getElementById('hungerCard').className = 'status-card hunger-' + (currentData.hunger || 'not_hungry');
+    if(currentData.hungerUpdated) document.getElementById('hungerTime').textContent = formatTime(currentData.hungerUpdated);
+    
+    displayTodayMessages();
+    displayUnreadMessages();
+    renderCalendar();
+}
+
+function displayTodayMessages() {
+    const container = document.getElementById('todayMessages');
+    const today = new Date().toISOString().split('T')[0];
+    const msgs = (currentData.messages || []).filter(m => m.timestamp && m.timestamp.startsWith(today) && m.type !== 'calendar');
+    
+    if(!msgs.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-emoji">💭</div><p>오늘의 메시지가 없어요</p></div>';
+        document.getElementById('unreadBadge').style.display = 'none';
+        return;
+    }
+    
+    // 시간별로 그룹화 (같은 분에 저장된 아버지 메시지는 묶음)
+    const grouped = {};
+    msgs.forEach(m => {
+        const timeKey = m.timestamp.substring(0, 16); // YYYY-MM-DDTHH:MM
+        const key = m.sender + '_' + timeKey;
+        if(!grouped[key]) grouped[key] = { sender: m.sender, time: timeKey, items: [], ids: [], read: true };
+        grouped[key].items.push(m);
+        grouped[key].ids.push(m.id);
+        if(m.sender === 'dad' && !m.read) grouped[key].read = false;
+    });
+    
+    // 안읽은 메시지 카운트
+    const unreadCount = Object.values(grouped).filter(g => g.sender === 'dad' && !g.read).length;
+    const badge = document.getElementById('unreadBadge');
+    if(unreadCount > 0) {
+        badge.textContent = unreadCount + '개 안읽음';
+        badge.style.display = 'inline';
+    } else {
+        badge.style.display = 'none';
+    }
+    
+    let html = '';
+    Object.values(grouped).sort((a,b) => new Date(b.time) - new Date(a.time)).forEach(g => {
+        const time = formatTimeHHMM(g.time);
+
+        if(g.sender === 'dad') {
+            // 아버지 메시지 카드 (묶음)
+            html += `<div class="message-card">
+                <div class="message-card-header">
+                    <span class="message-card-time">👨 ${time}</span>
+                    <div class="message-card-status">
+                        <span class="message-card-read ${g.read ? 'read' : 'unread'}">${g.read ? '✓ 읽음' : '안읽음'}</span>
+                        <button class="message-card-delete" onclick="deleteMessages('${g.ids.join(',')}')">🗑️</button>
+                    </div>
+                </div>`;
+            
+            g.items.forEach(item => {
+                const iconClass = item.type || 'message';
+                const icons = {message: '💬', advice: '❤️', memo: '📝'};
+                const labels = {message: '하고싶은 말', advice: '당부', memo: '메모'};
+                html += `<div class="message-card-item">
+                    <div class="message-card-icon ${iconClass}">${icons[iconClass] || '💬'}</div>
+                    <div class="message-card-content">
+                        <div class="message-card-label">${labels[iconClass] || '메시지'}</div>
+                        ${item.content}
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+        } else {
+            // 다영이 메시지
+            g.items.forEach(item => {
+                html += `<div class="dayoung-message">
+                    <div class="dayoung-message-header">
+                        <span class="dayoung-message-time">👧 ${time}</span>
+                        <button class="message-card-delete" onclick="deleteMessage('${item.id}')">🗑️</button>
+                    </div>
+                    <div class="dayoung-message-content">${item.content}</div>
+                </div>`;
+            });
+        }
+    });
+    
+    container.innerHTML = html;
+}
+
+function displayUnreadMessages() {
+    const section = document.getElementById('unreadSection');
+    const container = document.getElementById('unreadMessages');
+    const unread = (currentData.messages || []).filter(m => m.sender === 'dad' && !m.read);
+    
+    if(!unread.length) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    
+    // 시간별 그룹화
+    const grouped = {};
+    unread.forEach(m => {
+        const timeKey = m.timestamp.substring(0, 16);
+        if(!grouped[timeKey]) grouped[timeKey] = [];
+        grouped[timeKey].push(m);
+    });
+    
+    let html = '';
+    Object.keys(grouped).sort().reverse().forEach(timeKey => {
+        const time = formatTimeHHMM(timeKey);
+        const d = new Date(timeKey);
+        const date = d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: '2-digit', day: '2-digit' }).replace('. ', '/').replace('.', '');
+        html += `<div class="message-card" style="border:1px solid var(--danger)">
+            <div class="message-card-header">
+                <span class="message-card-time">👨 ${date} ${time}</span>
+            </div>`;
+        grouped[timeKey].forEach(item => {
+            const icons = {message: '💬', advice: '❤️', memo: '📝'};
+            const labels = {message: '하고싶은 말', advice: '당부', memo: '메모'};
+            html += `<div class="message-card-item">
+                <div class="message-card-icon ${item.type}">${icons[item.type] || '💬'}</div>
+                <div class="message-card-content">
+                    <div class="message-card-label">${labels[item.type] || '메시지'}</div>
+                    ${item.content}
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+async function markAllRead() {
+    const unreadIds = (currentData.messages || []).filter(m => m.sender === 'dad' && !m.read).map(m => m.id);
+    if(!unreadIds.length) return;
+    
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ markRead: unreadIds })
+        });
+        currentData = await res.json();
+        updateDisplay();
+        showToast('✓ 모두 읽음 표시 완료');
+    } catch(e) {
+        showToast('❌ 실패');
+    }
+}
+
+async function deleteMessage(id) {
+    if(!confirm('삭제할까요?')) return;
+    try {
+        const res = await fetch(API_URL, {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messageId:id})});
+        currentData = await res.json();
+        updateDisplay();
+        showToast('🗑️ 삭제 완료');
+    } catch(e) { showToast('❌ 삭제 실패'); }
+}
+
+async function deleteMessages(ids) {
+    if(!confirm('이 메시지들을 삭제할까요?')) return;
+    try {
+        for(const id of ids.split(',')) {
+            await fetch(API_URL, {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messageId:id})});
+        }
+        const res = await fetch(API_URL);
+        currentData = await res.json();
+        updateDisplay();
+        showToast('🗑️ 삭제 완료');
+    } catch(e) { showToast('❌ 삭제 실패'); }
+}
+
+async function saveFatherMemo() {
+    const msg = document.getElementById('fatherMessage').value.trim();
+    const adv = document.getElementById('fatherAdvice').value.trim();
+    const memo = document.getElementById('fatherMemo').value.trim();
+    if(!msg && !adv && !memo) { showToast('내용을 입력하세요'); return; }
+    
+    try {
+        const body = { timestamp: getKSTTimestamp() };
+        if(msg) body.fatherMessage = msg;
+        if(adv) body.fatherAdvice = adv;
+        if(memo) body.fatherMemo = memo;
+        const res = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+        currentData = await res.json();
+        updateDisplay();
+        document.getElementById('fatherMessage').value = '';
+        document.getElementById('fatherAdvice').value = '';
+        document.getElementById('fatherMemo').value = '';
+        clearDraftTime('fatherMessageDraftTime');
+        clearDraftTime('fatherAdviceDraftTime');
+        clearDraftTime('fatherMemoDraftTime');
+        showToast('✅ 저장 완료!');
+    } catch(e) { showToast('❌ 저장 실패'); }
+}
+
+async function saveDayoungStatus() {
+    const msg = document.getElementById('dayoungMessage').value.trim();
+    if(!selectedLocation && !selectedHunger && !msg) { showToast('변경할 내용을 선택하세요'); return; }
+    
+    try {
+        const body = { timestamp: getKSTTimestamp() };
+        if(selectedLocation) body.location = selectedLocation;
+        if(selectedHunger) body.hunger = selectedHunger;
+        if(msg) body.dayoungMessage = msg;
+        const res = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+        currentData = await res.json();
+        updateDisplay();
+        document.getElementById('dayoungMessage').value = '';
+        clearDraftTime('dayoungMessageDraftTime');
+        showToast('💕 저장 완료!');
+    } catch(e) { showToast('❌ 저장 실패'); }
+}
+
+// 달력
+function renderCalendar() {
+    const year = currentMonth.getFullYear(), month = currentMonth.getMonth();
+    document.getElementById('calendarTitle').textContent = `${year}년 ${month + 1}월`;
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const datesWithData = new Set();
+    (currentData.messages || []).forEach(m => { if(m.timestamp) datesWithData.add(m.timestamp.split('T')[0]); });
+    
+    let html = '';
+    for(let i = 0; i < firstDay; i++) {
+        const d = new Date(year, month, 0 - firstDay + i + 1).getDate();
+        html += `<div class="calendar-day other-month">${d}</div>`;
+    }
+    for(let d = 1; d <= lastDate; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const hasData = datesWithData.has(dateStr);
+        const isSelected = selectedDate === dateStr;
+        html += `<div class="calendar-day${isToday?' today':''}${hasData?' has-data':''}${isSelected?' selected':''}" onclick="selectDate('${dateStr}')">${d}</div>`;
+    }
+    document.getElementById('calendarDays').innerHTML = html;
+}
+
+function changeMonth(delta) { currentMonth.setMonth(currentMonth.getMonth() + delta); renderCalendar(); }
+
+function selectDate(dateStr) { selectedDate = dateStr; renderCalendar(); showDayDetail(dateStr); }
+
+function showDayDetail(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    document.getElementById('dayDetailTitle').textContent = `📅 ${parseInt(m)}월 ${parseInt(d)}일 기록`;
+    document.getElementById('dayDetail').style.display = 'block';
+    
+    const entries = (currentData.messages || []).filter(msg => msg.timestamp && msg.timestamp.startsWith(dateStr));
+    const container = document.getElementById('dayEntries');
+    
+    if(!entries.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-emoji">📝</div><p>이 날의 기록이 없어요</p></div>';
+    } else {
+        // 시간별 그룹화
+        const grouped = {};
+        entries.forEach(m => {
+            const timeKey = m.timestamp.substring(0, 16);
+            const key = m.sender + '_' + timeKey;
+            if(!grouped[key]) grouped[key] = { sender: m.sender, time: timeKey, items: [], ids: [] };
+            grouped[key].items.push(m);
+            grouped[key].ids.push(m.id);
+        });
+        
+        let html = '';
+        Object.values(grouped).sort((a,b) => new Date(b.time) - new Date(a.time)).forEach(g => {
+            const time = formatTimeHHMM(g.time);
+            if(g.sender === 'dad') {
+                html += `<div class="message-card">
+                    <div class="message-card-header">
+                        <span class="message-card-time">👨 ${time}</span>
+                        <button class="message-card-delete" onclick="deleteMessages('${g.ids.join(',')}')">🗑️</button>
+                    </div>`;
+                g.items.forEach(item => {
+                    const icons = {message:'💬', advice:'❤️', memo:'📝', calendar:'📅'};
+                    html += `<div class="message-card-item">
+                        <div class="message-card-icon ${item.type}">${icons[item.type]||'💬'}</div>
+                        <div class="message-card-content">${item.content}</div>
+                    </div>`;
+                    if(item.photo) html += `<img src="${item.photo}" style="max-width:100%;border-radius:12px;margin-top:8px">`;
+                });
+                html += '</div>';
+            } else {
+                g.items.forEach(item => {
+                    html += `<div class="dayoung-message">
+                        <div class="dayoung-message-header">
+                            <span class="dayoung-message-time">👧 ${time}</span>
+                            <button class="message-card-delete" onclick="deleteMessage('${item.id}')">🗑️</button>
+                        </div>
+                        <div class="dayoung-message-content">${item.content}</div>
+                    </div>`;
+                });
+            }
+        });
+        container.innerHTML = html;
+    }
+    
+    document.getElementById('calendarMemo').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    photoData = null;
+}
+
+function previewPhoto(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        photoData = ev.target.result;
+        document.getElementById('photoPreview').src = photoData;
+        document.getElementById('photoPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function saveCalendarEntry() {
+    const memo = document.getElementById('calendarMemo').value.trim();
+    if(!memo && !photoData) { showToast('내용을 입력하세요'); return; }
+    if(!selectedDate) { showToast('날짜를 선택하세요'); return; }
+    
+    try {
+        const body = {calendarEntry: {date: selectedDate, memo, photo: photoData, timestamp: getKSTTimestamp()}};
+        const res = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+        currentData = await res.json();
+        showDayDetail(selectedDate);
+        renderCalendar();
+        document.getElementById('calendarMemo').value = '';
+        clearDraftTime('calendarDraftTime');
+        document.getElementById('photoPreview').style.display = 'none';
+        photoData = null;
+        showToast('✅ 저장 완료!');
+    } catch(e) { showToast('❌ 저장 실패'); }
+}
+
+function showPasswordModal() {
+    document.getElementById('passwordModal').classList.add('active');
+    document.getElementById('passwordInput').value = '';
+    setTimeout(() => document.getElementById('passwordInput').focus(), 100);
+}
+function closePasswordModal() { document.getElementById('passwordModal').classList.remove('active'); }
+function checkPassword() {
+    if(document.getElementById('passwordInput').value === DAYOUNG_PW) {
+        closePasswordModal();
+        document.getElementById('dayoungLocked').style.display = 'none';
+        document.getElementById('dayoungUnlocked').style.display = 'block';
+        showToast('🔓 잠금 해제!');        checkDayoungPush();
+    } else {
+        showToast('❌ 비밀번호가 틀렸어요');
+        document.getElementById('passwordInput').value = '';
+    }
+}
+document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key === 'Enter') checkPassword(); });
+
+async function registerSW() {
+    if(!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.register('./sw.js');
+    if(reg.waiting) showUpdateNotice();
+    reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdateNotice();
+            }
+        });
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+}
+
+function showUpdateNotice() {
+    const notice = document.getElementById('updateNotice');
+    if(notice) notice.classList.add('show');
+}
+
+async function applyUpdate() {
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        if(reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        } else {
+            await refreshAppCache();
+        }
+    } catch(e) {
+        showToast('업데이트 적용 실패');
+    }
+}
+
+async function refreshAppCache() {
+    try {
+        showToast('캐시 정리 중...');
+        if('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(reg => reg.unregister()));
+        }
+        if('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(key => caches.delete(key)));
+        }
+        window.location.reload();
+    } catch(e) {
+        showToast('캐시 정리 실패');
+    }
+}
+async function checkDayoungPush() {
+    if(!("PushManager" in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    document.getElementById("dayoungPushBanner").classList.toggle("hidden", !!sub);
+}
+
+async function checkPush() {
+    if(!('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    document.getElementById('pushBanner').classList.toggle('hidden', !!sub);
+}
+async function subscribePushDayoung() {
+    try {
+        const perm = await Notification.requestPermission();
+        if(perm !== "granted") { showToast("알림 권한이 거부됨"); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64(VAPID_KEY)});
+        await fetch(API_URL + "/subscribe", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({subscription:sub.toJSON(), role:"dayoung"})});
+        document.getElementById("dayoungPushBanner").classList.add("hidden");
+        showToast("🔔 알림 등록 완료!");
+    } catch(e) { showToast("알림 등록 실패"); }
+}
+
+async function subscribePush() {
+    try {
+        const perm = await Notification.requestPermission();
+        if(perm !== 'granted') { showToast('알림 권한이 거부됨'); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64(VAPID_KEY)});
+        await fetch(API_URL + '/subscribe', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({subscription:sub.toJSON(), role:'dad'})});
+        document.getElementById('pushBanner').classList.add('hidden');
+        showToast('🔔 알림 등록 완료!');
+    } catch(e) { showToast('알림 등록 실패'); }
+}
+function urlB64(b64) { const p='='.repeat((4-b64.length%4)%4); const b=(b64+p).replace(/-/g,'+').replace(/_/g,'/'); return Uint8Array.from(atob(b),c=>c.charCodeAt(0)); }
+
+function formatTime(ts) {
+    // Date 파싱 + timeZone 지정 변환만으로 Asia/Seoul 기준 시간이 정확히 표시됩니다.
+    // 추가 오프셋(예: +3시간)을 더하면 시간이 틀어지는 버그가 발생합니다.
+    const adjusted = new Date(ts);
+    const options = {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    };
+    return adjusted.toLocaleString('ko-KR', options);
+}
+function formatTimeHHMM(ts) {
+    // 메시지 카드 시간도 동일하게 변환합니다.
+    const adjusted = new Date(ts);
+    return adjusted.toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+}
+function formatTimeOld(ts) {
+    const d = new Date(ts);
+    return `${d.getHours() < 12 ? '오전' : '오후'} ${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
